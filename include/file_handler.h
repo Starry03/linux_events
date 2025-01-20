@@ -8,11 +8,11 @@
 
 typedef struct s_filehandler
 {
-	pthread_t			tid;
-	int					fd;
 	struct input_event	ev;
 	t_shared_rsc		event_multi_queue;
 	t_string			input_path;
+	pthread_t			tid;
+	int					fd;
 }						t_filehandler_;
 
 typedef t_filehandler_	*t_filehandler;

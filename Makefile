@@ -1,6 +1,6 @@
 NAME=event
 CC=gcc
-# CFLAGS=-Wall -Wextra -Werror
+CFLAGS=-Wall -Wextra -Werror -g
 LIB=./UniC/unic.a -I./UniC
 INC=-I./include
 
@@ -16,6 +16,10 @@ fclean: clean
 	rm -f $(NAME)
 
 re: fclean all
-	
+
+valgrind:
+	sudo valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -s ./$(NAME)
+gdb:
+	sudo gdb ./$(NAME)
 
 .PHONY: all clean fclean re

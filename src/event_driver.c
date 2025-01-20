@@ -1,4 +1,5 @@
 #include "events.h"
+#include "unic/comparators.h"
 #include "unic/dictionary.h"
 #include <pthread.h>
 #include <stdlib.h>
@@ -26,8 +27,6 @@ t_event_driver	event_driver_init(t_string DEV_PATH)
 void	event_driver_run(t_event_driver driver)
 {
 	driver->thread_count = filehandler_manager_spawn(driver->handler_manager);
-	// for (pthread_t t = 0; t < driver->thread_count; t++)
-	// 	pthread_join(t, NULL);
 }
 void	event_driver_free(t_event_driver driver)
 {

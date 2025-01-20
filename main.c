@@ -6,16 +6,17 @@
 
 int	main(void)
 {
-	t_event_driver	driver;
-	t_linkedlist	*buckets;
-	t_linkedlist	bucket;
-	t_dict_obj		dict_obj;
-	struct input_event		event;
-	t_dict			dict;
+	bool				run;
+	t_event_driver		driver;
+	struct input_event	*event;
+	t_dict				dict;
+	uint16_t			i;
 
 	driver = event_driver_init("/dev/input/");
 	if (!driver)
 		return (EXIT_FAILURE);
+	i = EV_KEY;
+	run = true;
 	printf("initialized driver\n");
 	printf("got %zu devices\n",
 		linkedlist_size(driver->handler_manager->filehandlers));
@@ -23,25 +24,30 @@ int	main(void)
 	printf("generated %ld threads\n", driver->thread_count);
 	if (!driver->thread_count)
 		return (EXIT_FAILURE);
+	if (!driver->event_multi_queue || !driver->event_multi_queue->data)
+		return (EXIT_FAILURE);
+	shared_rsc_wait(driver->event_multi_queue);
 	dict = driver->event_multi_queue->data;
-	buckets = dict_get_buckets(dict);
-	while (1)
+	if (!dict)
+		return (EXIT_FAILURE);
+	shared_rsc_post(driver->event_multi_queue);
+	while (run)
 	{
-		shared_rsc_wait(driver->event_multi_queue);
-		for (size_t i = 0; i < dict->size; i++)
-		{
-			bucket = buckets[i];
-			while (bucket)
-			{
-				dict_obj = (t_dict_obj)(linkedlist_getinfo(bucket));
-				event = *(struct input_event *)dict_obj->value;
-				printf("event[%zu]: %zu -> %d\n", i, *(size_t *)dict_obj->key, event.code);
-				bucket = linkedlist_getnext(bucket);
-			}
-		}
-		dict_status(dict);
-		shared_rsc_post(driver->event_multi_queue);
 		sleep(1);
+		shared_rsc_wait(driver->event_multi_queue);
+		event = (struct input_event *)dict_get(dict, &i);
+		if (!event)
+		{
+			shared_rsc_post(driver->event_multi_queue);
+			continue ;
+		}
+		printf("type: %d, code: %d, value: %d\n", event->type, event->code,
+			event->value);
+		if (event->code == KEY_ESC)
+			run = false;
+		dict_remove(dict, &i);
+		shared_rsc_post(driver->event_multi_queue);
+		dict_status(dict);
 	}
 	event_driver_free(driver);
 }

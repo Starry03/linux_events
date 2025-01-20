@@ -55,27 +55,23 @@ pthread_t	filehandler_manager_spawn(t_filehandler_manager manager)
 {
 	t_linkedlist	node;
 	t_filehandler	handler;
-	pthread_t		*tids;
 	pthread_t		i;
 
 	i = 0;
 	node = manager->filehandlers;
-	tids = (pthread_t *)calloc(linkedlist_size(node), sizeof(pthread_t));
 	while (node)
 	{
 		handler = (t_filehandler)linkedlist_getinfo(node);
-		tids[i] = i;
-		handler->tid = tids[i];
-		pthread_create(tids + i, NULL, &filehandler_run, (t_generic)handler);
+		handler->tid = i;
+		pthread_create(&i, NULL, &filehandler_run, (t_generic)handler);
 		node = linkedlist_getnext(node);
 		i++;
 	}
-	free(tids);
 	return (i);
 }
 
 void	filehandler_manager_free(t_filehandler_manager manager)
 {
-	shared_rsc_free(manager->event_multi_queue);
 	linkedlist_dealloc(manager->filehandlers, &filehandler_free);
+	free(manager);
 }
