@@ -5,6 +5,7 @@
 # include "unic/types.h"
 # include <linux/input.h>
 # include <pthread.h>
+# include <stdbool.h>
 
 typedef struct s_filehandler
 {
@@ -13,6 +14,7 @@ typedef struct s_filehandler
 	t_string			input_path;
 	pthread_t			tid;
 	int					fd;
+	bool				run;
 }						t_filehandler_;
 
 typedef t_filehandler_	*t_filehandler;

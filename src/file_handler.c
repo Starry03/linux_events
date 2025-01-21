@@ -21,6 +21,7 @@ t_filehandler	filehandler_init(t_string input_path, pthread_t tid,
 	filehandler->tid = tid;
 	filehandler->fd = open(input_path, O_RDONLY);
 	filehandler->event_multi_queue = event_multi_queue;
+	filehandler->run = true;
 	if (filehandler->fd == -1)
 	{
 		free(filehandler);
@@ -31,7 +32,7 @@ t_filehandler	filehandler_init(t_string input_path, pthread_t tid,
 void	free_event(t_generic event)
 {
 	printf("freeing event\n");
-	free(event);
+	free((struct input_event *)event);
 }
 
 void	*filehandler_run(t_generic args)
@@ -42,7 +43,7 @@ void	*filehandler_run(t_generic args)
 	struct input_event	event_buf;
 	struct input_event	*event;
 
-	while (true)
+	while (filehandler->run)
 	{
 		event_buf = (struct input_event){0};
 		if (read(fd, (t_generic)&event_buf, size) == -1)
@@ -50,8 +51,9 @@ void	*filehandler_run(t_generic args)
 		shared_rsc_wait(filehandler->event_multi_queue);
 		event = (struct input_event *)calloc(1, size);
 		memcpy(event, &event_buf, size);
-		dict_add(filehandler->event_multi_queue->data, &(event->type),
-			(t_generic)event, &free_event);
+		if (!dict_add(filehandler->event_multi_queue->data, &(event->type),
+				(t_generic)event, &free_event))
+			free_event(event);
 		shared_rsc_post(filehandler->event_multi_queue);
 	}
 	return (NULL);

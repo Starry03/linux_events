@@ -2,6 +2,7 @@
 #include "libft/libft.h"
 #include <dirent.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #ifndef DT_CHR
@@ -55,23 +56,41 @@ pthread_t	filehandler_manager_spawn(t_filehandler_manager manager)
 {
 	t_linkedlist	node;
 	t_filehandler	handler;
-	pthread_t		i;
+	pthread_t		*i;
+	size_t			j;
 
-	i = 0;
+	j = 0;
 	node = manager->filehandlers;
+	i = (pthread_t *)malloc(sizeof(pthread_t) * linkedlist_size(node));
 	while (node)
 	{
+		*i = j;
 		handler = (t_filehandler)linkedlist_getinfo(node);
-		handler->tid = i;
-		pthread_create(&i, NULL, &filehandler_run, (t_generic)handler);
+		handler->tid = *i;
+		pthread_create(i + j, NULL, &filehandler_run, (t_generic)handler);
 		node = linkedlist_getnext(node);
-		i++;
+		j++;
 	}
-	return (i);
+	free(i);
+	return (j);
 }
 
 void	filehandler_manager_free(t_filehandler_manager manager)
 {
-	linkedlist_dealloc(manager->filehandlers, &filehandler_free);
+	t_linkedlist head;
+	size_t threads;
+	size_t i;
+
+	i = 0;
+	head = manager->filehandlers;
+	threads = linkedlist_size(head);
+	while (head)
+	{
+		((t_filehandler)linkedlist_getinfo(head))->run = false;
+		head = linkedlist_getnext(head);
+	}
+	while (i < threads)
+		pthread_join(i, NULL);
+	linkedlist_dealloc(&manager->filehandlers, &filehandler_free);
 	free(manager);
 }
