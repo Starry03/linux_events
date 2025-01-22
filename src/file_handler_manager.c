@@ -56,47 +56,37 @@ pthread_t	filehandler_manager_spawn(t_filehandler_manager manager)
 {
 	t_linkedlist	node;
 	t_filehandler	handler;
-	pthread_t		j;
+	pthread_t		i;
 
-	j = 0;
+	i = 0;
 	node = manager->filehandlers;
 	while (node)
 	{
 		handler = (t_filehandler)linkedlist_getinfo(node);
-		handler->tid = j;
-		pthread_create(&handler->tid, NULL, &filehandler_run,
+		pthread_create(handler->tid, NULL, &filehandler_run,
 			(t_generic)handler);
-		printf("thread %zu spawned\n", handler->tid);
+		pthread_detach(*handler->tid);
 		node = linkedlist_getnext(node);
-		j++;
+		i++;
 	}
-	return (j);
+	return (i);
 }
 
 void	filehandler_manager_free(t_filehandler_manager manager)
 {
 	t_linkedlist	head;
-	pthread_t		*tids;
-	size_t			thread_count;
-	size_t			i;
+	t_filehandler	handler;
 
-	i = 0;
 	head = manager->filehandlers;
-	thread_count = linkedlist_size(head);
-	tids = (pthread_t *)malloc(sizeof(pthread_t) * thread_count);
 	while (head)
 	{
-		((t_filehandler)linkedlist_getinfo(head))->run = false;
-		tids[i++] = ((t_filehandler)linkedlist_getinfo(head))->tid;
+		handler = (t_filehandler)linkedlist_getinfo(head);
+		shared_rsc_wait(handler->run);
+		*(bool *)handler->run->data = false;
+		shared_rsc_post(handler->run);
+		pthread_join(*handler->tid, NULL);
 		head = linkedlist_getnext(head);
 	}
-	i = 0;
-	while (i < thread_count)
-	{
-		printf("joining thread %zu\n", tids[i]);
-		pthread_join(tids[i++], NULL);
-	}
-	free(tids);
 	linkedlist_dealloc(manager->filehandlers, &filehandler_free);
 	free(manager);
 }

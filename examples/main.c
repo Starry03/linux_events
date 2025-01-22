@@ -1,27 +1,22 @@
 #include "events.h"
-#include "unic/dictionary.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 int	main(void)
 {
-	bool				run;
-	t_event_driver		driver;
 	struct input_event	*event;
-	uint16_t			i;
+	t_event_driver		driver;
+	bool				run;
+	uint16_t			key;
 
 	driver = event_driver_init("/dev/input/");
-	if (!driver)
-		return (EXIT_FAILURE);
 	event_driver_run(driver);
-	i = EV_KEY;
+	key = EV_KEY;
 	run = true;
-	printf("running: %zu threads\n", driver->thread_count);
 	while (run)
 	{
 		sleep(1);
-		event = (struct input_event *)event_driver_get(driver, &i);
+		event = (struct input_event *)event_driver_get(driver, &key);
 		if (event)
 		{
 			if (event->code == KEY_ESC)

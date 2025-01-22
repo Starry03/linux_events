@@ -1,25 +1,32 @@
-NAME=event
-CC=gcc
-CFLAGS=-Wall -Wextra -Werror -g
-LIB=./UniC/unic.a -I./UniC
-INC=-I./include
+DIRS := src
+SRCS := $(shell find $(DIRS) -name '*.c')
+OBJS := $(SRCS:.c=.o)
+LINK := ./UniC/unic.a -I./UniC -lm
+CC := gcc
+CFLAGS := -I./include -Wall -Wextra -Werror
+LIB := linux_events.a
 
-all:
+all: link $(LIB)
+
+$(LIB): $(OBJS)
+	ar rcs $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(LINK) -c $< -o $@
+
+link:
 	make -C UniC
-	$(CC) $(CFLAGS) main.c ./src/*.c -o $(NAME) $(LIB) $(INC)
 
 clean:
 	make -C UniC clean
 
 fclean: clean
 	make -C UniC fclean
-	rm -f $(NAME)
+	rm -f $(LIB)
 
 re: fclean all
 
-valgrind:
-	sudo valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes -s ./$(NAME)
-gdb:
-	sudo gdb ./$(NAME)
+example: link $(LIB)
+	$(CC) $(CFLAGS) -I./include -I./UniC $(LIB) examples/main.c -o examples/example && ./examples/example
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re example

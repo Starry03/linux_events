@@ -18,12 +18,17 @@ t_filehandler	filehandler_init(t_string input_path, pthread_t tid,
 	if (!filehandler)
 		return (NULL);
 	filehandler->input_path = input_path;
-	filehandler->tid = tid;
+	filehandler->tid = (pthread_t *)malloc(sizeof(pthread_t));
+	*filehandler->tid = tid;
 	filehandler->fd = open(input_path, O_RDONLY);
 	filehandler->event_multi_queue = event_multi_queue;
-	filehandler->run = true;
+	filehandler->run = shared_rsc_init(malloc(sizeof(bool)), &free);
+	shared_rsc_wait(filehandler->run);
+	*(bool *)filehandler->run->data = true;
+	shared_rsc_post(filehandler->run);
 	if (filehandler->fd == -1)
 	{
+		free(filehandler->tid);
 		free(filehandler);
 		return (NULL);
 	}
@@ -43,9 +48,17 @@ void	*filehandler_run(t_generic args)
 	struct input_event	*event;
 	ssize_t				ret;
 
-	while (filehandler->run)
+	fcntl(fd, F_SETFL, O_NONBLOCK);
+	memset(&event_buf, 0, size);
+	while (true)
 	{
-		event_buf = (struct input_event){0};
+		shared_rsc_wait(filehandler->run);
+		if (!*(bool *)filehandler->run->data)
+		{
+			shared_rsc_post(filehandler->run);
+			break ;
+		}
+		shared_rsc_post(filehandler->run);
 		ret = read(fd, (t_generic)&event_buf, size);
 		if (ret <= 0)
 			continue ;
@@ -56,14 +69,17 @@ void	*filehandler_run(t_generic args)
 				(t_generic)event, &free_event))
 			free_event(event);
 		shared_rsc_post(filehandler->event_multi_queue);
+		memset(&event_buf, 0, size);
 	}
+	close(fd);
 	return (NULL);
 }
 
 void	filehandler_free(t_generic handler)
 {
 	const t_filehandler filehandler = (t_filehandler)handler;
-	close(filehandler->fd);
+	free(filehandler->tid);
 	free(filehandler->input_path);
+	shared_rsc_free(filehandler->run);
 	free(filehandler);
 }
