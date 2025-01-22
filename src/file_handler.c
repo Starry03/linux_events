@@ -29,9 +29,8 @@ t_filehandler	filehandler_init(t_string input_path, pthread_t tid,
 	}
 	return (filehandler);
 }
-void	free_event(t_generic event)
+static inline void	free_event(t_generic event)
 {
-	printf("freeing event\n");
 	free((struct input_event *)event);
 }
 
@@ -42,12 +41,14 @@ void	*filehandler_run(t_generic args)
 	const int			fd = filehandler->fd;
 	struct input_event	event_buf;
 	struct input_event	*event;
+	ssize_t				ret;
 
 	while (filehandler->run)
 	{
 		event_buf = (struct input_event){0};
-		if (read(fd, (t_generic)&event_buf, size) == -1)
-			break ;
+		ret = read(fd, (t_generic)&event_buf, size);
+		if (ret <= 0)
+			continue ;
 		shared_rsc_wait(filehandler->event_multi_queue);
 		event = (struct input_event *)calloc(1, size);
 		memcpy(event, &event_buf, size);

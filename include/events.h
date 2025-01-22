@@ -3,6 +3,7 @@
 
 # include "file_handler.h"
 # include "file_handler_manager.h"
+# include <stdint.h>
 
 typedef struct s_event_driver
 {
@@ -16,6 +17,10 @@ typedef t_event_driver_		*t_event_driver;
 
 t_event_driver				event_driver_init(t_string DEV_PATH);
 void						event_driver_run(t_event_driver driver);
+t_generic					event_driver_get(t_event_driver driver,
+								uint16_t *event_type);
+bool						event_driver_clean_get(t_event_driver driver,
+								struct input_event *event);
 void						event_driver_free(t_event_driver driver);
 
 int							cmp_event(const t_generic a, const t_generic b);
