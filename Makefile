@@ -1,18 +1,20 @@
 DIRS := src
 SRCS := $(shell find $(DIRS) -name '*.c')
 OBJS := $(SRCS:.c=.o)
-LINK := ./UniC/unic.a -I./UniC -lm
+INCLUDES := -I./include -I./UniC
+LINK := ./UniC/unic.a  -lm
 CC := gcc
-CFLAGS := -I./include -Wall -Wextra -Werror
+CFLAGS := -Wall -Wextra -Werror
 LIB := linux_events.a
 
 all: link $(LIB)
 
 $(LIB): $(OBJS)
 	ar rcs $@ $^
+	rm -f $(OBJS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(LINK) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 link:
 	make -C UniC
@@ -27,6 +29,6 @@ fclean: clean
 re: fclean all
 
 example: link $(LIB)
-	$(CC) $(CFLAGS) -I./include -I./UniC $(LIB) examples/main.c -o examples/example && ./examples/example
+	$(CC) $(CFLAGS) $(INCLUDES) examples/*.c $(LIB) $(LINK) -o examples/example
 
 .PHONY: all clean fclean re example

@@ -1,2 +1,5 @@
 *.o
 .vscode
+examples/
+!examples/*.c
+./linux_events.a
